@@ -1,1 +1,271 @@
+covered_tickers = ['ANZ'.
+"BMO"
+'BNS"
+"CBAAU", 'CN',
+'DBSSP"
+'LBBW"
+"ANZNZ"
+"MUNHYP"
+"NACN'
+"WSTPNZ"
+"BARUK"
+"BAWAG'
+"NNG", 'SANTAN", 'SPABOL
+"NAB"
+"BHH"
+•SEB
+"SANTAN"
+'BYLAN'
+•SHBASS
+"TD",
+'WSTP"
+"HSBC",
+'LLOYDS'
+"NWIDE"
+'CAFFIL"
+'CFF"
+•CCD7'
+"RY", "SANUK".
+'COVBS
+'UOBSP
+'SKIPTN"
+"VUKLN", "SWEDA",
+"SPBANK"
+"DHYP", "HESLAN", "INTNED", "LEED",
+, "YBS"]
 
+dcc. Tab( label="Sector RY", value= "rv5", children=[ html.Div(id="top-div7", children=[
+html, Div(className="row", children=l html.P(L "Select Issuer:"], style=i font-weight:
+"bold"}),
+dec. Dropdown (id="issuer15" ,options=[{' Label': i, value: in for i in sorted(sectors)], value-"None", placeholders "Ipput an Issuer",styies("width": '2e0px",
+nee. o ropom el esael y p onst9-trbe, 3,
+"margin":
+ealue" ty t°) l an sorted(sectors)].
+value= "None" ,placeholder="Input an Issuer" astylesi width';
+"200px',
+"margin";
+• 0.5em'3),
+value': it for i in sorted (sectors)],
+value= None ,placeholder="Input an Issuer"
+html.P([""], style=t'display'; 'inline-grid'
+dec.Dropdown (id= 'issuer18"
+,options-I1 Label': i,
+valuels in for a in sorted(seccors)1a
+value= 'None' ,placeholder="Input an Issuer"
+"margin';
+o sen wideh
+dec. Dropdown (id='issuer19"
+value? ar for i in sorted sectors 1,
+value= 'None',placeholder="Input an Issuer",style={'width'
+html.P(I"Select Frelds:", style=t font-weight"; "boLds) dcc.Dropdown (id='curve2'
+', options=[(' Label': 3,
+'yalue'：3
+1 in sorted wo yeurves la
+TemL.P(ASstyle=playsne-gravenergn.se119
+'display';
+intine gris box shadewe.em .em em nghe(e, ee.0borde-nadt р*.
+html.P([""],style={'display'; 'inline-grid', dec. Dropdown (id='ccycurve3', options=[{' Label': i,
+value='USD', placeholder="Input an Currency", styles{'width': '20epx',
+*2000%, spleyntnegris, toxshado, ' 0,2en 9.2en 3en ngbe, e, e, 9.3)', "berder-retue" "20p*'))
+html.P([""],style=f'display'; 'inline-grid',
+•margin'; ' 0.5em ),
+'display': 'inline-grid',
+•box-shadow": • 0.2em 0.2em Zem rgba(0, 0,
+0,
+0.3)% "border-radius":
+"10px")).
+
+"display': "inline-grid", "box-shadow": • 0.2em 0.2em lem rgba(0, 0, 0, 0.3)' "border-radius®: *I0px*}).
+'display": "inline-grid',
+'box-shadow": ' 0.2em 0.2em Lem rgba(0, 0, 0, 0.3)' "border-radius":
+"10px"?),
+'display', 'intine-grid',
+"box-shadow' • e.cem 0.2em Lem rgba(0, 0, 0, 0.3)', "berder-radius": "I@px"}).
+"display', 'intine-grid',
+"box-shadew"g ' 0.2em 0.2em sem rgba(o, o, , 0, 0.9) ', "berder-radius': "sepx")).
+acc. Dropdown (id= 'sources',
+"euergrtd s
+margins
+options=[('Label': 1,
+"value': v) for i,
+value='BBT", placeholder="Input an Source", style=t width": '200px",
+v in sorted(gbpsource. items))].
+"display": "intine-grid', "box-shadow*: • 0.2em 0.2em em gba(®, 0, 0, 0.3)', 'border-radius', °10px*})
+html.P(I"Select Min Issue Size (MM):"], style={'font-weight': bold'}) dcc. Dropdown (id= 'issuesize3',
+valueD, Placeholder input Size, style with wee
+"value': i for i in [0,
+250, 500, 1000, 2000, 500011,
+"display", "intine-grid", "box-shadow*: ' e.2em 0.2em tem rgba(e, 0, 0, 0.3)', "border-radius": "10px'}),
+html. Button("press Me", className="button",
+1),
+id= 'refresh6", style=("font-weight'; "botd", "margin": "Irem'}),
+1),
+html. Div(id="bottom-div6", children=t
+html. Div(className="row", id= 'output6"),
+11),
+
+@app. calLback (Output ('output6", 'children'),
+[Input ("refresh6'
+"value"),
+State ('issuer19',
+State('source3', "value'), State("issuesize3', "value')])
+"Value"), State ("issuer 16', "Lulu, State("coycurves", "value").
+"value"), State("curve?",
+State( 'issuer17', "value"), State('issuer18", "value").
+def
+Refresh6(n, issuer15, issuer16, issuer17, issuer18, issuer19, curvez, ccy, if not n:
+sources, issuesize3);
+raise PreventUpdate
+select_tickers = [issuer15, issuer16, issuer17, issuer18, issuer19]
+select tickers = [x for x in select_tickers if x 1= "None']
+con = pdblp.BCon(debug-False, port=8194, timeout=1000Đ0)
+con.starto
+a = con.bsrch('FI: CREDITALL")
+b = con.ref(list(a[0]), ['CRNCY",
+b. columns = b. columns.droplevel(0)
+"ticker", 'CPN TYP", "IS_COVERED"]). set_ index(['ticker", "field']).unstack("fieLd")
+fig_smile = go. Figure()
+aswtbl = []
+for tickk in select tickers:
+I
+if curve2 == 'ASW Bid":
+fin = "MMS_ SPREAD BID'
+elif curve2 = 'ASW Ask':
+fin = "MMS_SPREAD_ASK"
+else:
+fin = 'MMS Mid'
+bid_side = "MMS_SPREAD BID'
+ask_side = "MMS_ SPREAD_ASK"
+covind = "N"
+contyp = "FIXED'
+fields = ['SECURITY_SHORT_DES', "MATURITY", 'CRNCY", "MS_SPREAD_BID", "MMS_ SPREAD_ASK",
+"MTY_YEARS",
+"INFLATION_ LINKED_ INDICATOR', "SINKABLE", "AMT_OUTSTANDING", 'ISSUE_DT', "TICKER', 'CPN_TYP"]
+if tickk == "Pensions";
+df = ['CPPIBC', 'PSPCAP", "ONTTFT", "CADEPO", POMERFT"]
+elif tickk == 'Provies':
+af = ['ONT', 'Q', "ALTA', 'BRCOL', "MP"]
+elif tickk == 'Japanese':
+df = ['JBIC',
+"DBJJP', "IN", "JICA"]
+elif tickk == "supra'；
+df = ['EIB',
+"KFW"
+"IBRD', "AISA', "TADB"]
+elif tickk == "T1s"；
+df = ['IFC', "AFDB", 'EBRD', 'RENTEN', "NIB', "ESM", "IDAWBG"]
+elif tickk == 'T2s';
+df = ["KUNTA',
+"KOMMUN",
+'EDC', 'COE', 'LBANK', 'CADES', NRW",
+elif tickk =
+"T3s':
+"NRWEK"]
+df = [ 'BNG"
+"SEK', "KBN"]
+elif tickk ==
+'ALL Covered':
+df = ['TD'
+covind = 'y'
+if ссуз == 'СВР";
+contyp = 'FLOATING'
+
+fields = I 'SECURITY_SHORT DES',
+"MATURITY"
+bid side =
+'INFLATION LINKED INDICATOR', "SINKABLE",
+"NTY_ YEARS"
+'DISC MRGN BID'
+ask_side = 'DISC MRGN ASK'
+1f curve2 == 'ASW Bid":
+fin = DISC_MRGN_BID'
+elif curve2 =
+'ASW Ask':
+fin = 'DISC_MRGN_ASK"
+else:
+fin = MMS Mid'
+elif tickk = 'UK Covered':
+df = ['LLOYDS", "HSBC', "NWIDE", "SANUK"]
+covind = 'y'
+if ссуз = 'GBP*:
+contyp = "FLOATING'
+fields = ['SECURITY SHORT DES". "MATURITY",
+"DISC NRGN BID"
+'INFLATION LINKED _INDICATOR", "SINKABLE"
+DISC ARGN ASK" "NTY YEARS".
+bid side = 'DISC _MRON_BID'
+ask side = "DISC MRGN ASK"
+WABLEY ANT OUTSTANDING, "ISSUE_DT , "TICKER "CPN_TP)
+if curve2 = "ASW Bid':
+Fin = "DISC_MRGN_BID"
+elif curve2 == 'ASW Ask":
+fin = 'DISC_MRGN_ASK"
+else:
+fin = "MMS Mid'
+elif tickk == 'Cad/Aud/Oth Covered":
+covind 7 y
+if ссуз == *GBP":
+cntyp = 'FLOATING"
+fields = I 'SECURITY_SHORT DES',
+"MATURITY"
+"CRNCY",
+*INFLATION LINKED_ INDICATOR",
+"SINKABLE",
+*DISC MRGN ASK"
+bid side - "DISC MRGN_ BID'
+"ANT OUTSTANDING, ISSUEDT, TICKER,
+NTY YEARS"
+CPIL TVP"]
+ask side =
+'DISC_MRGN ASK"
+if curvez = "ASW Bid':
+fin = 'DISC MRGN BID'
+elit curvez = ASW ASR :
+Fin = 'DISC MRGN ASK"
+else:
+Fin = NNS Mid'
+Iv1 one = bI(b]'ticker'].isin(df)) & (bI'CPN_TVP']
+| = cntyp) & (b['IS_COVERED] = covind)]
+DF_Ivlone = list (Ivl_one[vl_onel 'CRNCY"] = ccy3]-index)
+DF_Ivlone = [elen. split(* [0] + *@" + source3 +
++ elen split(" D)[1] for elen in DF_Ivione]
+DF Ivlone = con.ref(DF lvlone, fields)-set index(I'ticker',
+"field']) -unstack("field')
+DF_Ivlone.columns = DF 1vlone.columns.droplevel(0)
+DF_Ivlone = DF_Ivlone[DF_Ivlone[ANT_OUTSTANDING"] >-issuesize3*100000Đ]
+DF Ivlone = DF Ivlone[DF_Ivlonel 'SINKABLE"] = 'N*]
+vlone = DF vlone[Dr_Ivlone[ 'TSSUE DT] pd, Timestamp('2010-01-01 00:00:00")] reset_sndex(drop=True)
+DF_ Ivlone = DF Ivlone[DF_Ivlonel 'MTY YEARS"] > 0.251
+DF Lvione = DF_Ivlone[DF
+1vlone[ 'NTY YEARS"] < 13]
+DF Ivlone.dropna(inplace-True)
+DF_IvIone[fin] = DF_Ivlone[finj.astype(float)
+DF_1Vlone['maturity_days"] = (DF_Ivlone[ "MATURITY"] - DF Ivlone[ MATURITY J-min()).de.cays
+p = np.polyfit(DF_ lvlonel 'maturity days"], DF lylone[fin], 3)
+*_range = np.Jinspace(DF IVone[ 'naturity_days"}.min(), Dr_avlone['maturity_days "].max(), 1000)
+y_range = np-polyval(p, x_range)
+maturity_start = pd. Tinestamp (DF_IvIone! 'MATURITY ],min())
+maturity_range = (maturity_start + pd. to timedelta(x range, unit='D')) date
+yearsrv = [1, 2, 3, 4, 5J
+findata = [tickk]
+for yr in yearsry:
+aswdf = (datetime, today() + relativedelta(years = yr))-date() - DF_lylone[ MATURITY"] -min()
+val = np-polyval (P, aswdf.days)
+findata, append (val) aswtbl.append(findata)
+for elem in df:
+finalissuerDF = DF_IvIone[DF_IvIone['TICKER'] =» elen)
+fig_smile, add tracel
+go.Scatter (y=finalissuerDF [FinalissuerDF[fin] > =751[fin].dropra()
+X=finalissuerDr[finalissuerDr[fin] > →75][ MATURETY 3. dropna(), namaselem, modes'markers"))
+
+go.Scatter (y=y_range,
+x=maturity_range, name= tickk, mode= 'Lines'))
+aswdata = pd.DataFrame(aswtbl, columns=['Issuer', '1Y',
+"2Y", "3y", '4Y",
+*SY"]) -round (decimals = 1)
+Finalaswtable = create_datatable_spreads(aswdata)
+fig_smile.update_
+_layout (
+go. Layout (autosize-False, width=1500, height=750, xaxis=("autorange": True, "title": "Maturity"), yaxis=( 'title': fin, 'autorange': True}, hovermode='closest" title-fin, font-dict(size=18)))
+fig_ smile.update_yaxes(nticks=30)
+return dec. Graph(animate=False, figure-fig_smile, config-("modeBarButtonsToRemove": ['sendDataToCLoud"I}), Finalaswtable
