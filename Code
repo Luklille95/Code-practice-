@@ -1,107 +1,560 @@
-if curve == 'yield':
-fin = 'YLD_YTM MID"
-elif curve = 'ASW Bid":
-fin = "MMS_SPREAD_BID"
-frnhead =
-elif curve ==
-"DISC_MRGN_BID'
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Output, Input, State
+from dash.exceptions import PreventUpdate
+import pdblp
+import dash_table
+from dash_table.Format import Format
 
-if coupontyp =
-'FIXED':
-cntyp =
-['FIXED"]
-elif coupontyp
-'FLOATING':
-cntyp =
-['FLOATING']
-else:
-contyp = ['FIXED', 'FLOATING"]
-if iscovered2
-iscovered2new = ['Y']
-elif iscovered2 ==
-"N':
-iscovered2new = ['N"]
-else:
-iscovered2new = ['Y',
-"N']
-#YAS ISPREAD
-select tickers =
-[issuere, issuerl, issuer2,
-select tickers =
-[x for x in select_tickers if x I=
-DFcomb = pd. DataFrame()
-con = pdblp.BCon(debug=False, port=8194, timeout=100000)
-con. start()
-for tick in select_ tickers:
-if tick in govvie:
-a = con.bsrch('FI:' + tick)
-else:
-a = con.brch(FT: CREDITALL")
-b. columns = b. columns, droplevel ticker',
-"CPN_ TYP",
-'IS_COVERED"]) - set index(['ticker', 'field']) .unstack('field")
-fig smile = go. Figure
-for tick in select tickers:
-02 = b[(b["ticker'] = tick) & (b['CPN_TYP"]-isin(cntyp)) & (b['IS_COVERED'] == *N*)]
-if tick in
-covered _tickers:
-b2 = b[(b[ 'ticker'] = tick) & (b['CPN_TYP"]. isin(cpntyp)) & (b['IS_COVERED"].isin(iscovered2new))]
-DF = list (b2[b2[ 'CRNCY'] == ccy].index)
-OF = [elem.split(* *)[01 + *0"
-+ source + • ' + elem.split(' *)[1] for elem in DF]
-fields = ['SECURITY_SHORT_DES',
-"CRNCY",
-"YAS ISPREAD"
-"MMS SPREAD BID', "MMS SPREAD ASK',
-'YLD YTM MID'
-"MTY YEARS"
-'ISSUE_ DT',
-"DISC MRGN MID',
-'DISC_MRGN_BID', "DISC_MRGN_ASK',
-DF1 = con.ref(DF, fields).set index(I'ticker", 'field"]) unstack( 'field')
-DF1. columns = DF1.columns.droplevel(0)
-DFcomb = DF1
-I
-DFcomb = DFcomb [DFcomb['ANT_OUTSTANDING"]>=issuesize*1000000]
-'SINKABLE"]=='N']
-DFcomb = DFcomb [DFcomb [
-ISSUE_DT ]> pd.Timestamp 2010-01-01 00:00:00']. reset index(drop=True)
-DFcomb[ MMS Mid"] = (DFcomb[ MMS _SPREAD _BID"] + DFcomb[ MMS_SPREAD_ASK *])/2
-DFcomb = DFcomb[DFcomb[ 'MTY_YEARS"] > 0.25]
-snrtick =[]
-tick_list = [tick]
-if tick in covered_tickers:
-if iscovered2 =
-'ALL':
-DFcomb[ 'TICKER'] = DFcomb.apply(Lambda x: x['TICKER']+'_SNR' 1€ X['IS_COVERED'] = 'N' else x['TICKER'], axis=1)
-newtickers = DFcomb[ 'TICKER"], unique()
-snrtick = list (set (newtickers).difference(tick_list))
-DFCOmbl 'TICKER'] = DFcomb,apply(Lambda *: *I'TICKER'J+' _FRN* 1f X['CPN_TYP"] = 'FLOATING' else XI'TICKER'], axis=1)
-DFcomb = DFcomb-sort_values ('MATURITY")
-alltickers = DFcomb[ 'TICKER'] - unique()
-tickfrn = list(set(alltickers),difference(tick_list))
-if len(tickfrn) › 0:
-tickfrnfinal = list(set(tickfrn) .difference(snrtick))
-else:
-tickfrnfinal = tickfrn
-nonfrn = tick_list + snrtick
-for elem in nonfrn:
-finalissuerDF = DFcomb[DFcomb[ 'TICKER'] == elem]
-fig_smile.add_trace(
-x=finalissuerDF[finalissuerDF[fin] >
 
-if len(tickfrnfinal)
-> 0:
-for ticker in tickfrnfinal:
-FinalissuerDF = DFcomb[DFcomb[ 'TICKER'] == ticker]
-fig_smile.add_trace(go.Scattery=finalissuerDF[finalissuerDF[frnhead] › -29][frnhead]-dropna(), x=finalissuerD[finalissuerDF[frnhead] › -29][ 'MATURITY"].dropna(), namesticker))
 
-fig_smile.update_layout(
-go. Layout (autosize=False, width=1500, height=750,
-yax1s=l title：fin，
-autorange': True}, hovermode= 'closest',
-YaxYautorange's true， "title's aturity'g.
-title=fin.
-font=dict (size=18)))
-fig_smile.update yaxes(nticks=30
-return dec.Graph(animate=False, figure-fig smile, config=['modeBarButtonsToRemove": ['sendDataToCLoud*J})
+
+import numpy as np
+import pandas as pd
+import itertools
+import datetime
+from datetime import date
+import plotly.graph_objs as go
+
+from scipy.optimize import curve_fit
+
+def create_datatable(df):
+    columns = [{'id': c, 'name': c, 'type': 'numeric',
+            'format': Format(group=',')} for c in df.columns]
+
+    stylex = ([{'if': {'column_id': x, 'filter_query': '{{{0}}} < 0'.format(x)},
+                'color': 'red'} for x in df.columns.values])
+    temp = dash_table.DataTable(data=df.to_dict('records'),
+            columns=columns,
+
+            editable=True,
+            style_data_conditional=stylex + [{
+                'if': {'row_index': 'odd'},
+                'backgroundColor': 'rgb(248, 248, 248)'}],
+            style_header={
+                'backgroundColor': 'rgb(230, 230, 230)',
+                'fontWeight': 'bold'},
+            style_cell={'width': '500px', 'textAlign': 'center','font_size': '20px'},
+            filter_action = 'native',
+            filter_options={'placeholder_text': 'Filter', 'case':'insensitive'},
+            sort_action='native',
+            sort_mode='multi',
+            export_format="csv"            
+            )
+    return temp
+
+
+tickers = ['ALLSSA', 'EIB','KFW','IBRD','IADB','ASIA','EBRD','BNG','NEDWBK',
+           'DEXGRP','FMSWER','LBANK','NRW','NRWBK','KOMINS','KOMMUN',
+           'RENTEN','NIB','CADEPO','AFDB', 'CADES', 'CANADA', 'CDCEPS', 'ANZ', 'BMO', 'BNS', 'CBAAU', 'CM', 
+           'DBSSP', 'NAB', 'SANTAN', 'TD', 'WSTP', 'HSBC', 'LLOYDS', 'NWIDE', 'RY', 'SANUK', 'COE', 'CPPIBC', 
+           'DBJJP', 'ERSTAA', 'ESM', 'EDC', 'EUROF', 'FINL', 'FINNVE', 'IDAWBG', 'IDBINV', 'IFC', 'JBIC', 'JFM', 
+           'JICA', 'KBN', 'KUNTA', 'NDEVBB', 'OKB', 'OMERFT', 'ONT', 'ONTTFT', 'PSPCAP', 'Q', 'RESFER', 'SEK','ALTA',
+           'AGFRNC','AIIB','BOEN','BRCOL','BELG','MP','NEDFIN','SFILFR','SNCF'
+]
+
+gbpsource = {'CBBT':'CBBT', 'BAML':'BAME', 'Barc':'BARX','BMO':'BMOZ','Santan':'BSGI','Citi':'CGSA','DB':'DAB','GS':'GS','HSBC':'HSGB',
+             'JPM':'JPGX','Mizuho':'MZLN','RBC':'RBGV','Natwest':'RBSM','TD':'TDUK', 'Cred Ag USD':'CALY', 'CIBC':'CIBC', 'Citi USD':'CUSA',
+             'DZ USD':'DZBK', 'NBF USD':'NBF', 'Nomura':'NOMX', 'Santan EUR':'BSGB', 'DEKA':'DEKA', 'HSBC EUR':'HSBW'}
+
+usdsource = ['CBBT', 'BAME', 'BARX','BMOZ','CALY','CIBC','CUSA','DAB','DZBK','GS','HSGB','JPGX','MZLN','NBF','NOMX','RBGV','TDUK']
+eursource = ['CBBT', 'BAME', 'BARX','CALY','CGSA','DAB','DEKA','DZBK','GS','HSBW','JPGX','MZLN','NOMX','RBSM','TDUK']
+
+tempsource = ['CBBT', 'BAME', 'BARX', 'DAB', 'GS', 'JPGX', 'TDUK']
+
+ccy = ['ALL', 'EUR', 'GBP', 'USD']
+
+curvess = ['ASW','Yield']
+
+app = dash.Dash()
+
+
+app.layout = html.Div(children=[
+
+        html.Div(id="top-div", children=[
+            html.H1("SSA & Covered Bond Trading Analytics", className="app-title"),
+            dcc.Tabs(
+                id="tabs",
+                value="vol",
+                # style={'display': 'none'},
+                children=[
+                    dcc.Tab(
+                        label="SSA Xccy Spreads",
+                        value="usd",
+                        children=[
+                            html.Div(id="top-div1", children=[
+            html.Div(className="row", children=[
+                html.P(["Select Issuer:"], style={'display': 'inline-grid', 'font-weight': 'bold', 'margin': '1rem'}),
+                dcc.Dropdown(
+                    id='issuer',
+                    options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                    value='AFDB',
+                    placeholder="Input an Issuer",
+                    style={'width': '200px',  'display': 'inline-grid',  'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'},
+                ),
+                html.P([""]),
+                html.P(["GBP Source:"], style={'display': 'inline-grid','font-weight': 'bold', 'margin': '1rem'}),
+                dcc.Dropdown(
+                    id='gbppxsource',
+                    options=[{'label': i, 'value': v} for i, v in sorted(gbpsource.items())],
+                    value='CBBT',
+                    placeholder="Input a dealer",
+                    style={'width': '200px',  'display': 'inline-grid',  'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'},
+                ),
+                html.P([""]),
+                html.P(["USD Source:"], style={'display': 'inline-grid', 'font-weight': 'bold', 'margin': '1rem'}),
+                dcc.Dropdown(
+                    id='usdpxsource',
+                    options=[{'label': i, 'value': v} for i, v in sorted(gbpsource.items())],
+                    value='CBBT',
+                    placeholder="Input a dealer",
+                    style={'width': '200px',  'display': 'inline-grid',  'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'},
+                ),
+                html.P([""]),
+                html.P(["EUR Source:"],style={'display': 'inline-grid', 'font-weight': 'bold', 'margin': '1rem'}),
+                dcc.Dropdown(
+                    id='eurpxsource',
+                    options=[{'label': i, 'value': v} for i, v in sorted(gbpsource.items())],
+                    value='CBBT',
+                    placeholder="Input a dealer",
+                    style={'width': '200px',  'display': 'inline-grid',  'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'},
+                ),
+                html.P([""]),
+                html.P(["New Issue Level:"],style={'display': 'inline-grid', 'font-weight': 'bold', 'margin': '1rem'}),
+                dcc.Input(
+                    id='newissuepx',
+                    type='number',
+                    value='',
+                    placeholder="Input a level",
+                    style={'width': '200px',  'display': 'inline-grid',  'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)'},
+                ),
+                html.P([""]),
+                html.P(["New Issue Date:"],style={'display': 'inline-grid', 'font-weight': 'bold', 'margin': '1rem'}),
+                dcc.DatePickerSingle(
+                    id='newissuedate',
+                    first_day_of_week=1,
+                    display_format='DD/MM/YYYY',
+                    date = pd.datetime.today(),
+                    style={'width': '200px',  'display': 'inline-grid',  'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)'},
+                ),
+                html.Span(style={'margin': '10px'}),
+
+                html.Button("Press Me", className="button", id='refresh', style={'font-weight': 'bold', 'margin': '1rem'}),
+            ]),
+        ]),
+        html.Div(id="bottom-div", children=[
+
+            html.Div(className="row", id='output'),
+        ])]),
+ 
+                    dcc.Tab(
+                        label="Govies Xccy Spreads",
+                        value="usd1",
+                        children=[
+                            html.Div(id="top-div2", children=[
+                                html.Div(className="row", children=[
+
+                                    html.Button("Press Me", className="button", id='refresh1', style={'font-weight': 'bold', 'margin': '1rem'}),
+                                ]),
+                            ]),
+                            html.Div(id="bottom-div1", children=[
+
+                                html.Div(className="row", id='output1'),
+                            ])]),
+                    
+                    dcc.Tab(
+                        label="Issuer Curve Charting",
+                        value="usd2",
+                        children=[
+                            html.Div(id="top-div3", children=[
+                                html.Div(className="row", children=[
+                             html.P(["Select Issuer:"], style={'font-weight': 'bold'}),
+                             dcc.Dropdown(id='issuer0',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+                             html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                             dcc.Dropdown(id='issuer1',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+                             html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                             dcc.Dropdown(id='issuer2',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+                             html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                             dcc.Dropdown(id='issuer3',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+                             html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                             dcc.Dropdown(id='issuer4',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+
+                html.P(["Select Fields:"], style={'font-weight': 'bold'}),
+                dcc.Dropdown(id='curve', options=[{'label': i, 'value': i} for i in sorted(curvess)],
+                value='None', placeholder="Input an Curve",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+                html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                dcc.Dropdown(id='ccycurve', options=[{'label': i, 'value': i} for i in sorted(ccy)],
+                value='None', placeholder="Input an Currency",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+               html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                dcc.Dropdown(id='source', options=[{'label': i, 'value': v} for i, v in sorted(gbpsource.items())],
+                value='None', placeholder="Input an Source",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+
+                html.P(["Select Min Issue Size (MM):"], style={'font-weight': 'bold'}),
+                dcc.Dropdown(id='issuesize', options=[{'label': i, 'value': i} for i in [0, 250, 500, 1000, 2000]],
+                value='None', placeholder="Input Size", style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+
+                                    html.Button("Press Me", className="button", id='refresh2', style={'font-weight': 'bold', 'margin': '1rem'}),
+                                ]),
+                            ]),
+                            html.Div(id="bottom-div2", children=[
+
+                                html.Div(className="row", id='output2'),
+                            ])]),
+                    
+                    dcc.Tab(
+                        label="Pricing page",
+                        value="usd3",
+                        children=[
+                            html.Div(id="top-div4", children=[
+                                html.Div(className="row", children=[
+                             html.P(["Select Issuer:"], style={'font-weight': 'bold'}),
+                             dcc.Dropdown(id='issuer5',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+                             html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                             dcc.Dropdown(id='issuer6',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+                             html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                             dcc.Dropdown(id='issuer7',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+                             html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                             dcc.Dropdown(id='issuer8',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+                             html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                             dcc.Dropdown(id='issuer9',options=[{'label': i, 'value': i} for i in sorted(tickers)],
+                                          value='None',placeholder="Input an Issuer",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+
+                html.P(["Select Fields:"], style={'font-weight': 'bold'}),
+                dcc.Dropdown(id='ccycurve1', options=[{'label': i, 'value': i} for i in sorted(ccy)],
+                value='None', placeholder="Input an Currency",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+               html.P([""],style={'display': 'inline-grid', 'margin': ' 0.5em'}),
+                dcc.Dropdown(id='source1', options=[{'label': i, 'value': v} for i, v in sorted(gbpsource.items())],
+                value='None', placeholder="Input an Source",style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+
+                html.P(["Select Min Issue Size (MM):"], style={'font-weight': 'bold'}),
+                dcc.Dropdown(id='issuesize1', options=[{'label': i, 'value': i} for i in [0, 250, 500, 1000, 2000]],
+                value='None', placeholder="Input Size", style={'width': '200px',  'display': 'inline-grid', 'box-shadow': ' 0.2em 0.2em 1em rgba(0, 0, 0, 0.3)', 'border-radius': '10px'}),
+
+                                    html.Button("Press Me", className="button", id='refresh3', style={'font-weight': 'bold', 'margin': '1rem'}),
+                                ]),
+                            ]),
+                            html.Div(id="bottom-div3", children=[
+
+                                html.Div(className="row", id='output3'),
+                            ])])
+
+        ])])])
+
+@app.callback(Output('output', 'children'),
+                   [Input('refresh', 'n_clicks')],
+                   [State('issuer', 'value'), State('gbppxsource', 'value'), State('usdpxsource', 'value'), State('eurpxsource', 'value'), State('newissuepx', 'value'), State('newissuedate', 'date')])
+def Refresh(n, ticker, gbpsource, usdsource, eursource, newissuelevel, newissuedate):
+    if not n:
+        raise PreventUpdate
+
+    con = pdblp.BCon(debug=False, port=8194, timeout=100000)
+    con.start()
+    a = con.bsrch('FI:' + ticker)
+    b = con.ref(list(a[0]), ['CRNCY']).set_index(['ticker', 'field']).unstack('field')
+    b.columns = b.columns.droplevel(0)
+    
+    usd = list(b[(b['CRNCY'] != 'GBP') & (b['CRNCY'] != 'EUR')].index)
+    usd = [elem.split(' ')[0] + '@' + usdsource + ' ' + elem.split(' ')[1] for elem in usd]
+    eur = list(b[b['CRNCY'] == 'EUR'].index)
+    eur = [elem.split(' ')[0] + '@' + eursource + ' ' + elem.split(' ')[1] for elem in eur]
+    gbp = list(b[b['CRNCY'] == 'GBP'].index)
+    gbp = [elem.split(' ')[0] + '@' + gbpsource + ' ' + elem.split(' ')[1] for elem in gbp]
+    fields = ['SECURITY_SHORT_DES', 'MATURITY', 'CRNCY', 'YAS_XCCY_ASW_SPREAD', 'MTY_YEARS',
+              'INFLATION_LINKED_INDICATOR', 'SINKABLE', 'AMT_OUTSTANDING']
+ 
+    if len(usd) > 0:
+        DF1 = con.ref(usd, fields, [('YAS_XCCY_FOREIGN_CURRENCY', 'USD')]).set_index(['ticker', 'field']).unstack('field')
+        DF1.columns = DF1.columns.droplevel(0)
+        
+        if len(eur) > 0:
+            DF2 = con.ref(eur, fields, [('YAS_XCCY_FOREIGN_CURRENCY', 'USD')]).set_index(['ticker', 'field']).unstack('field')
+            DF2.columns = DF2.columns.droplevel(0)
+                        
+            if len(gbp) > 0:
+                 DF3 = con.ref(gbp, fields, [('YAS_XCCY_FOREIGN_CURRENCY', 'USD')]).set_index(['ticker', 'field']).unstack('field')
+                 DF3.columns = DF3.columns.droplevel(0)
+                 DF = pd.concat([DF1, DF2, DF3])
+            
+            else:
+                DF = pd.concat([DF1, DF2])
+                
+        elif len(gbp) > 0:
+            DF3 = con.ref(gbp, fields, [('YAS_XCCY_FOREIGN_CURRENCY', 'USD')]).set_index(['ticker', 'field']).unstack('field')
+            DF3.columns = DF3.columns.droplevel(0)
+            DF = pd.concat([DF1, DF3])
+        
+        else:
+            DF = DF1
+        
+    elif len(eur) > 0:
+        DF2 = con.ref(eur, fields, [('YAS_XCCY_FOREIGN_CURRENCY', 'USD')]).set_index(['ticker', 'field']).unstack('field')
+        DF2.columns = DF2.columns.droplevel(0)
+                        
+        if len(gbp) > 0:
+            DF3 = con.ref(gbp, fields, [('YAS_XCCY_FOREIGN_CURRENCY', 'USD')]).set_index(['ticker', 'field']).unstack('field')
+            DF3.columns = DF3.columns.droplevel(0)
+            DF = pd.concat([DF2, DF3])
+        
+        else:
+            DF = DF2
+            
+    elif len(gbp) > 0:
+        DF3 = con.ref(gbp, fields, [('YAS_XCCY_FOREIGN_CURRENCY', 'USD')]).set_index(['ticker', 'field']).unstack('field')
+        DF3.columns = DF3.columns.droplevel(0)
+        DF = DF3
+        
+    else:
+        DF = [[]]
+
+    DF = DF[(DF['INFLATION_LINKED_INDICATOR'] == 'N') & (DF['SINKABLE'] == 'N')]
+    DF = DF[DF['MTY_YEARS'] > 1]
+    DF = DF[~((DF['CRNCY'] == 'EUR') & (DF['AMT_OUTSTANDING'] < 100000000))]
+    DF = DF[~((DF['CRNCY'] == 'GBP') & (DF['AMT_OUTSTANDING'] < 100000000))]
+    DF = DF[~((DF['CRNCY'] == 'USD') & (DF['AMT_OUTSTANDING'] < 100000000))]
+    DF = DF[~((DF['CRNCY'] == 'CAD') & (DF['AMT_OUTSTANDING'] < 100000000))]
+
+    DF = DF.sort_values('MATURITY').dropna(subset=['YAS_XCCY_ASW_SPREAD'])
+    
+    newmat = newissuedate
+    #datetime.date(2028,3,1)
+    newlevel = newissuelevel
+    xCategory = 'MATURITY'
+    yCategory = 'YAS_XCCY_ASW_SPREAD'
+
+    fig_smile = go.Figure(data=go.Scatter(y=DF[DF["CRNCY"] == "EUR"][yCategory],
+                                          x=DF[DF["CRNCY"] == "EUR"][xCategory], name='EUR'))
+    fig_smile.add_trace(
+        go.Scatter(y=DF[DF["CRNCY"] == "USD"][yCategory], x=DF[DF["CRNCY"] == "USD"][xCategory],
+                   name='USD'))
+    fig_smile.add_trace(
+        go.Scatter(y=DF[DF["CRNCY"] == "GBP"][yCategory], x=DF[DF["CRNCY"] == "GBP"][xCategory],
+                   name='GBP'))
+    fig_smile.add_trace(
+        go.Scatter(y=DF[DF["CRNCY"] == "CAD"][yCategory], x=DF[DF["CRNCY"] == "CAD"][xCategory],
+                   name='CAD'))
+    fig_smile.add_trace(
+        go.Scatter(y=[newlevel], x=[newmat],
+                   name='New Issue/Tap'))
+    fig_smile.update_layout(go.Layout(autosize=False, width=1500, height=750, xaxis={'autorange': True, 'title': 'Maturity'},
+                                      yaxis={'title': 'ASW-Spread', 'autorange': True}, hovermode='closest',
+                                      title='XCCY adjusted Curves'))
+    return dcc.Graph(animate=False,figure=fig_smile,config={'modeBarButtonsToRemove': ['sendDataToCloud']})
+
+
+@app.callback(Output('output1', 'children'),
+                   [Input('refresh1', 'n_clicks')],
+                   )
+def Refresh1(n):
+    if not n:
+        raise PreventUpdate
+
+    con = pdblp.BCon(debug=False, port=8194, timeout=100000)
+    con.start()
+    a = con.bsrch('FI:GOVIES')
+    a = [elem.split(' ')[0] + '@CBBT ' + elem.split(' ')[1] for elem in list(a[0])]
+    fields = ['SECURITY_SHORT_DES', 'MATURITY', 'CRNCY', 'YAS_XCCY_ASW_SPREAD', 'MTY_YEARS',
+              'INFLATION_LINKED_INDICATOR', 'SINKABLE', 'TICKER', 'ISSUER', 'CPN']
+    DF = con.ref(a, fields, [('YAS_XCCY_FOREIGN_CURRENCY', 'EUR')]).set_index(['ticker', 'field']).unstack('field')
+    DF.columns = DF.columns.droplevel(0)
+
+    DF = DF[(DF['INFLATION_LINKED_INDICATOR'] == 'N') & (DF['SINKABLE'] == 'N')]
+    DF = DF[DF['MTY_YEARS'] > 1]
+    DF = DF[~((DF['TICKER'] == 'UKT') & (DF['CRNCY'] != 'GBP'))]
+    DF = DF[~((DF['TICKER'] == 'T') & (DF['CRNCY'] != 'USD'))]
+    DF = DF[~((DF['TICKER'] == 'FRTR') & (DF['CRNCY'] != 'EUR'))]
+    DF = DF[~((DF['TICKER'] == 'DBR') & (DF['CRNCY'] != 'EUR'))]
+    DF = DF[~((DF['TICKER'] == 'BTPS') & (DF['CRNCY'] != 'EUR'))]
+    DF = DF[~((DF['TICKER'] == 'SPGB') & (DF['CRNCY'] != 'EUR'))]
+    DF = DF[~((DF['TICKER'] == 'T') & (DF['ISSUER'] == 'AT&T INC'))]
+    DF = DF[~((DF['TICKER'] == 'BTPS') & (DF['CPN'] > 6))]
+
+    DF = DF.sort_values('MATURITY').dropna(subset=['YAS_XCCY_ASW_SPREAD'])
+
+    xCategory = 'MATURITY'
+    yCategory = 'YAS_XCCY_ASW_SPREAD'
+
+    fig_smile = go.Figure(data=go.Scatter(y=DF[DF["TICKER"] == "UKT"][yCategory],
+                                          x=DF[DF["TICKER"] == "UKT"][xCategory], name='UK', line_color='red'))
+    fig_smile.add_trace(
+        go.Scatter(y=DF[DF["TICKER"] == "T"][yCategory], x=DF[DF["TICKER"] == "T"][xCategory],
+                   name='US', line_color='blue'))
+    fig_smile.add_trace(
+        go.Scatter(y=DF[DF["TICKER"] == "FRTR"][yCategory], x=DF[DF["TICKER"] == "FRTR"][xCategory],
+                   name='FR', line_color='green'))
+    fig_smile.add_trace(
+        go.Scatter(y=DF[DF["TICKER"] == "DBR"][yCategory], x=DF[DF["TICKER"] == "DBR"][xCategory],
+                   name='DE', line_color='pink'))
+
+    fig_smile.add_trace(
+        go.Scatter(y=DF[DF["TICKER"] == "BTPS"][yCategory], x=DF[DF["TICKER"] == "BTPS"][xCategory],
+                   name='ITA', line_color='orange'))
+    fig_smile.add_trace(
+        go.Scatter(y=DF[DF["TICKER"] == "SPGB"][yCategory], x=DF[DF["TICKER"] == "SPGB"][xCategory],
+                   name='ESP', line_color='black'))
+
+    fig_smile.update_layout(
+        go.Layout(autosize=False, width=1500, height=750, xaxis={'autorange': True, 'title': 'Maturity'},
+                  yaxis={'title': 'ASW-Spread', 'autorange': True}, hovermode='closest',
+                  title='XCCY adjusted Curves'))
+    return dcc.Graph(animate=False,figure=fig_smile,config={'modeBarButtonsToRemove': ['sendDataToCloud']})
+
+
+@app.callback(Output('output2', 'children'),
+                   [Input('refresh2', 'n_clicks')],
+                   [State('issuer0', 'value'), State('issuer1', 'value'), State('issuer2', 'value'),
+                    State('issuer3', 'value'), State('issuer4', 'value'), State('curve', 'value'), State('ccycurve', 'value'), 
+                    State('source', 'value'), State('issuesize', 'value')])
+
+def Refresh2(n, issuer0, issuer1, issuer2, issuer3, issuer4, curve, ccy, source, issuesize):
+    if not n:
+        raise PreventUpdate
+
+    if curve == 'Yield':
+        fin = 'YLD_YTM_MID'
+    else:
+        fin = 'YAS_ISPREAD'
+
+    select_tickers = [issuer0, issuer1, issuer2, issuer3, issuer4]
+    select_tickers = [x for x in select_tickers if x != 'None']
+
+
+    
+    DFcomb = pd.DataFrame()
+    
+    for tick in select_tickers:
+        con = pdblp.BCon(debug=False, port=8194, timeout=100000)
+        con.start()
+    
+        a = con.bsrch('FI:' + tick)
+        b = con.ref(list(a[0]), ['CRNCY']).set_index(['ticker', 'field']).unstack('field')
+        b.columns = b.columns.droplevel(0)
+        DF = list(b[b['CRNCY'] == ccy].index)
+        DF = [elem.split(' ')[0] + '@' + source + ' ' + elem.split(' ')[1] for elem in DF]
+        fields = ['SECURITY_SHORT_DES', 'MATURITY', 'CRNCY', 'YAS_ISPREAD', 'YLD_YTM_MID', 'MTY_YEARS',
+                  'INFLATION_LINKED_INDICATOR', 'SINKABLE', 'AMT_OUTSTANDING', 'ISSUE_DT', 'TICKER']
+        DF1 = con.ref(DF, fields).set_index(['ticker', 'field']).unstack('field')
+        DF1.columns = DF1.columns.droplevel(0)
+        
+        DFcomb = pd.concat([DFcomb, DF1])
+        
+        
+
+    DFcomb = DFcomb[DFcomb['AMT_OUTSTANDING']>=issuesize*1000000]
+    DFcomb = DFcomb[DFcomb['SINKABLE']=='N']
+    DFcomb = DFcomb[DFcomb['ISSUE_DT']> pd.Timestamp('2010-01-01 00:00:00')].reset_index(drop=True)
+    DFcomb = DFcomb[DFcomb['MTY_YEARS'] > 1]
+    DFcomb = DFcomb.sort_values('MATURITY').dropna(subset=[fin])
+    
+    fig_smile = go.Figure()
+    for ticker in select_tickers:
+        finalissuerDF = DFcomb[DFcomb['TICKER'] == ticker]
+        fig_smile.add_trace(
+            go.Scatter(y=finalissuerDF[finalissuerDF[fin] > -29][fin].dropna(),
+                       x=finalissuerDF[finalissuerDF[fin] > -29]['MATURITY'].dropna(), name=ticker))
+    
+   
+    
+
+    fig_smile.update_layout(
+        go.Layout(autosize=False, width=1500, height=750, xaxis={'autorange': True, 'title': 'Maturity'},
+        yaxis={'title': fin, 'autorange': True}, hovermode='closest',
+        title=fin, font=dict(size=18)))
+    fig_smile.update_yaxes(nticks=30)
+    return dcc.Graph(animate=False, figure=fig_smile, config={'modeBarButtonsToRemove': ['sendDataToCloud']})
+
+
+@app.callback(Output('output3', 'children'),
+                   [Input('refresh3', 'n_clicks')],
+                   [State('issuer5', 'value'), State('issuer6', 'value'), State('issuer7', 'value'),
+                    State('issuer8', 'value'), State('issuer9', 'value'), State('ccycurve1', 'value'), 
+                    State('source1', 'value'), State('issuesize1', 'value')])
+
+def Refresh3(n, issuer5, issuer6, issuer7, issuer8, issuer9, ccy1, source1, issuesize1):
+    if not n:
+        raise PreventUpdate
+
+    select_tickers = [issuer5, issuer6, issuer7, issuer8, issuer9]
+    select_tickers = [x for x in select_tickers if x != 'None']
+
+
+    
+    DFcomb = pd.DataFrame()
+    
+    for tick in select_tickers:
+        con = pdblp.BCon(debug=False, port=8194, timeout=100000)
+        con.start()
+    
+        a = con.bsrch('FI:' + tick)
+        b = con.ref(list(a[0]), ['CRNCY']).set_index(['ticker', 'field']).unstack('field')
+        b.columns = b.columns.droplevel(0)
+        
+        if ccy1 != 'ALL':
+            DF = list(b[b['CRNCY'].isin([ccy1])].index)
+        else:
+             DF = list(b[b['CRNCY'].isin(['EUR','GBP','USD'])].index)
+             
+        #DFdeal = pd.DataFrame(columns = ['CRNCY', 'ID_ISIN', 'ISSUE_DT', 'BB_COMPOSITE', 'AMT_OUTSTANDING', 'TICKER', 'CPN', 'MATURITY',
+          #                                     'MTY_YEARS', 'SECURITY_SHORT_DES', 'INFLATION_LINKED_INDICATOR', 'SINKABLE'])     
+             
+       # for dealer in tempsource:
+        #    DF = [elem.split(' ')[0] + '@' + dealer + ' ' + elem.split(' ')[1] for elem in DF]
+         #   fields = ['CRNCY', 'ID_ISIN', 'ISSUE_DT', 'BB_COMPOSITE', 'AMT_OUTSTANDING', 'TICKER', 'CPN', 'MATURITY', 'PX_BID', 'PX_MID', 'PX_ASK',
+          #        'YLD_YTM_BID', 'YLD_YTM_MID', 'YLD_YTM_ASK', 'YAS_ASW_SPREAD', 'MTY_YEARS', 'SECURITY_SHORT_DES', 'INFLATION_LINKED_INDICATOR', 'SINKABLE']
+        #
+         #   DF1 = con.ref(DF, fields).set_index(['ticker', 'field']).unstack('field')
+          #  DF1.columns = DF1.columns.droplevel(0)
+           # DFdeal = pd.merge(DF1, DFdeal, on=['CRNCY', 'ID_ISIN', 'ISSUE_DT', 'BB_COMPOSITE', 'AMT_OUTSTANDING', 'TICKER', 'CPN', 'MATURITY',
+            #                                   'MTY_YEARS', 'SECURITY_SHORT_DES', 'INFLATION_LINKED_INDICATOR', 'SINKABLE'], how='left', suffixes=('_'+ str(dealer), None))
+        #DFcomb = pd.concat([DFcomb, DFdeal])
+        
+        DF = [elem.split(' ')[0] + '@' + source1 + ' ' + elem.split(' ')[1] for elem in DF]
+        
+        fields = ['CRNCY', 'ID_ISIN', 'ISSUE_DT', 'BB_COMPOSITE', 'AMT_OUTSTANDING', 'TICKER', 'CPN', 'MATURITY', 'PX_BID', 'PX_MID', 'PX_ASK',
+                  'YAS_ISPREAD', 'BLP_I_SPRD_CHG', 'YAS_YLD_SPREAD', '1D_BID_SPRD_TO_BNCH_ABSOLUTE_CHG', 'YAS_ISPREAD_TO_GOVT', 'YLD_YTM_BID', 'YLD_YTM_MID', 'YLD_YTM_ASK', 
+                  'YAS_XCCY_ASW_SPREAD', 'MTY_YEARS', 'SECURITY_SHORT_DES', 'INFLATION_LINKED_INDICATOR', 'SINKABLE']
+
+        
+        DF1 = con.ref(DF, fields, [('YAS_XCCY_FOREIGN_CURRENCY', 'USD')]).set_index(['ticker', 'field']).unstack('field')
+        DF1.columns = DF1.columns.droplevel(0)
+        
+        DFcomb = pd.concat([DFcomb, DF1])
+
+    DFcomb = DFcomb[DFcomb['AMT_OUTSTANDING']>=issuesize1*1000000]
+    DFcomb['AMT_OUTSTANDING'] =  DFcomb['AMT_OUTSTANDING']/1000000
+    DFcomb = DFcomb[DFcomb['SINKABLE']=='N']
+    DFcomb = DFcomb[DFcomb['ISSUE_DT']> pd.Timestamp('2010-01-01 00:00:00')].reset_index(drop=True)
+    DFcomb = DFcomb[DFcomb['MTY_YEARS'] > 1]
+    DFcomb = DFcomb.sort_values(['TICKER','MATURITY'], ascending=[True, True])
+    
+    fields2 = ['CRNCY', 'ID_ISIN', 'ISSUE_DT', 'BB_COMPOSITE', 'AMT_OUTSTANDING', 'TICKER', 'CPN', 'MATURITY', 'PX_BID', 'PX_MID', 'PX_ASK',
+                'YAS_ISPREAD', 'BLP_I_SPRD_CHG', 'YAS_YLD_SPREAD', '1D_BID_SPRD_TO_BNCH_ABSOLUTE_CHG', 'YAS_ISPREAD_TO_GOVT', 'YLD_YTM_BID', 'YLD_YTM_MID', 'YLD_YTM_ASK', 
+                'YAS_XCCY_ASW_SPREAD', 'MTY_YEARS', 'SECURITY_SHORT_DES']
+    
+    DFcomb = DFcomb[fields2]
+    DFcomb['YAS_ISPREAD'] = DFcomb['YAS_ISPREAD'].map('{:.1f}'.format)
+    DFcomb['BLP_I_SPRD_CHG'] = DFcomb['BLP_I_SPRD_CHG'].map('{:.1f}'.format)
+    DFcomb['YAS_YLD_SPREAD'] = DFcomb['YAS_YLD_SPREAD'].map('{:.1f}'.format)
+    DFcomb['1D_BID_SPRD_TO_BNCH_ABSOLUTE_CHG'] = DFcomb['1D_BID_SPRD_TO_BNCH_ABSOLUTE_CHG'].map('{:.1f}'.format) 
+    DFcomb['YAS_ISPREAD_TO_GOVT'] = DFcomb['YAS_ISPREAD_TO_GOVT'].map('{:.1f}'.format)
+    DFcomb['YLD_YTM_BID'] = DFcomb['YLD_YTM_BID'].map('{:.3f}'.format)
+    DFcomb['YLD_YTM_MID'] = DFcomb['YLD_YTM_MID'].map('{:.3f}'.format)
+    DFcomb['YLD_YTM_ASK'] = DFcomb['YLD_YTM_ASK'].map('{:.3f}'.format)
+    DFcomb['YAS_XCCY_ASW_SPREAD'] = DFcomb['YAS_XCCY_ASW_SPREAD'].map('{:.1f}'.format)
+    DFcomb['MTY_YEARS'] = DFcomb['MTY_YEARS'].map('{:.1f}'.format)
+    
+    
+    Finaltable = create_datatable(DFcomb)
+    return Finaltable
+
+if __name__ == '__main__': 
+    app.run_server()
