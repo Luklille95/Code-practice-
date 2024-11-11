@@ -1,0 +1,107 @@
+if curve == 'yield':
+fin = 'YLD_YTM MID"
+elif curve = 'ASW Bid":
+fin = "MMS_SPREAD_BID"
+frnhead =
+elif curve ==
+"DISC_MRGN_BID'
+
+if coupontyp =
+'FIXED':
+cntyp =
+['FIXED"]
+elif coupontyp
+'FLOATING':
+cntyp =
+['FLOATING']
+else:
+contyp = ['FIXED', 'FLOATING"]
+if iscovered2
+iscovered2new = ['Y']
+elif iscovered2 ==
+"N':
+iscovered2new = ['N"]
+else:
+iscovered2new = ['Y',
+"N']
+#YAS ISPREAD
+select tickers =
+[issuere, issuerl, issuer2,
+select tickers =
+[x for x in select_tickers if x I=
+DFcomb = pd. DataFrame()
+con = pdblp.BCon(debug=False, port=8194, timeout=100000)
+con. start()
+for tick in select_ tickers:
+if tick in govvie:
+a = con.bsrch('FI:' + tick)
+else:
+a = con.brch(FT: CREDITALL")
+b. columns = b. columns, droplevel ticker',
+"CPN_ TYP",
+'IS_COVERED"]) - set index(['ticker', 'field']) .unstack('field")
+fig smile = go. Figure
+for tick in select tickers:
+02 = b[(b["ticker'] = tick) & (b['CPN_TYP"]-isin(cntyp)) & (b['IS_COVERED'] == *N*)]
+if tick in
+covered _tickers:
+b2 = b[(b[ 'ticker'] = tick) & (b['CPN_TYP"]. isin(cpntyp)) & (b['IS_COVERED"].isin(iscovered2new))]
+DF = list (b2[b2[ 'CRNCY'] == ccy].index)
+OF = [elem.split(* *)[01 + *0"
++ source + • ' + elem.split(' *)[1] for elem in DF]
+fields = ['SECURITY_SHORT_DES',
+"CRNCY",
+"YAS ISPREAD"
+"MMS SPREAD BID', "MMS SPREAD ASK',
+'YLD YTM MID'
+"MTY YEARS"
+'ISSUE_ DT',
+"DISC MRGN MID',
+'DISC_MRGN_BID', "DISC_MRGN_ASK',
+DF1 = con.ref(DF, fields).set index(I'ticker", 'field"]) unstack( 'field')
+DF1. columns = DF1.columns.droplevel(0)
+DFcomb = DF1
+I
+DFcomb = DFcomb [DFcomb['ANT_OUTSTANDING"]>=issuesize*1000000]
+'SINKABLE"]=='N']
+DFcomb = DFcomb [DFcomb [
+ISSUE_DT ]> pd.Timestamp 2010-01-01 00:00:00']. reset index(drop=True)
+DFcomb[ MMS Mid"] = (DFcomb[ MMS _SPREAD _BID"] + DFcomb[ MMS_SPREAD_ASK *])/2
+DFcomb = DFcomb[DFcomb[ 'MTY_YEARS"] > 0.25]
+snrtick =[]
+tick_list = [tick]
+if tick in covered_tickers:
+if iscovered2 =
+'ALL':
+DFcomb[ 'TICKER'] = DFcomb.apply(Lambda x: x['TICKER']+'_SNR' 1€ X['IS_COVERED'] = 'N' else x['TICKER'], axis=1)
+newtickers = DFcomb[ 'TICKER"], unique()
+snrtick = list (set (newtickers).difference(tick_list))
+DFCOmbl 'TICKER'] = DFcomb,apply(Lambda *: *I'TICKER'J+' _FRN* 1f X['CPN_TYP"] = 'FLOATING' else XI'TICKER'], axis=1)
+DFcomb = DFcomb-sort_values ('MATURITY")
+alltickers = DFcomb[ 'TICKER'] - unique()
+tickfrn = list(set(alltickers),difference(tick_list))
+if len(tickfrn) › 0:
+tickfrnfinal = list(set(tickfrn) .difference(snrtick))
+else:
+tickfrnfinal = tickfrn
+nonfrn = tick_list + snrtick
+for elem in nonfrn:
+finalissuerDF = DFcomb[DFcomb[ 'TICKER'] == elem]
+fig_smile.add_trace(
+x=finalissuerDF[finalissuerDF[fin] >
+
+if len(tickfrnfinal)
+> 0:
+for ticker in tickfrnfinal:
+FinalissuerDF = DFcomb[DFcomb[ 'TICKER'] == ticker]
+fig_smile.add_trace(go.Scattery=finalissuerDF[finalissuerDF[frnhead] › -29][frnhead]-dropna(), x=finalissuerD[finalissuerDF[frnhead] › -29][ 'MATURITY"].dropna(), namesticker))
+
+fig_smile.update_layout(
+go. Layout (autosize=False, width=1500, height=750,
+yax1s=l title：fin，
+autorange': True}, hovermode= 'closest',
+YaxYautorange's true， "title's aturity'g.
+title=fin.
+font=dict (size=18)))
+fig_smile.update yaxes(nticks=30
+return dec.Graph(animate=False, figure-fig smile, config=['modeBarButtonsToRemove": ['sendDataToCLoud*J})
